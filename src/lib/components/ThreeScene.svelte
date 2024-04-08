@@ -13,6 +13,9 @@
 		'https://firebasestorage.googleapis.com/v0/b/music-gadget-d82f8.appspot.com/o/SFX%2Fkeys%2Fkey_05.wav?alt=media&token=47ad187d-cd3d-49d7-9793-1b090405ca50'
 	];
 
+	let keyClick: Blob;
+	let audioUrl: string;
+
 	let scene: THREE.Scene;
 	let camera: THREE.PerspectiveCamera;
 	let renderer: THREE.WebGLRenderer;
@@ -23,9 +26,21 @@
 		initScene();
 		addClickFunctionality();
 
-		keySFX.forEach((sound) => {
-			const audio = new Audio(sound);
-			audio.load();
+		keySFX.forEach((soundUrl) => {
+			caches.open('music-gadget').then((cache) => {
+				fetch(soundUrl, { mode: 'no-cors' }).then((response) => {
+					const cloneResponse = response.clone();
+
+					cache.put(soundUrl, response);
+
+					cloneResponse.blob().then((blob) => {
+						keyClick = blob;
+						if (keyClick) {
+							audioUrl = URL.createObjectURL(keyClick);
+						}
+					});
+				});
+			});
 		});
 
 		// const controls = new OrbitControls(camera, renderer.domElement);
@@ -164,8 +179,12 @@
 				const clickableObject = intersects[0].object;
 				console.log('You clicked on ' + clickableObject.name);
 
-				const audio = new Audio(keySFX[Math.floor(Math.random() * keySFX.length)]);
-				audio.play();
+				// const audio = new Audio(keySFX[Math.floor(Math.random() * keySFX.length)]);
+				if (keyClick && audioUrl) {
+					console.log(audioUrl);
+					const audio = new Audio(audioUrl);
+					audio.play();
+				}
 
 				const originalPos = clickableObject.position.y;
 
